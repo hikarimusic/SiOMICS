@@ -1,2 +1,2 @@
 # SiOMICS
-Omics Analysis in silico
+Omics analysis in silico 
