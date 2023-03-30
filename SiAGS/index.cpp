@@ -5,7 +5,7 @@
 
 
 #include <iostream>
-// #include <bitset>
+#include <bitset>
 
 // void write_acgt(std::uint32_t* ref, int pos, char nuc) {
 //     int box = pos >> 4;
@@ -86,22 +86,37 @@
 //     delete[] ref;   // -1GiB;
 // }
 
-void index(std::string ref_f) {
-    std::string chr{};
-    std::uint32_t* seq{new std::uint32_t[268435456]{}};   // +1GiB
-    read(chr, seq);   // (+-4GiB)
-    std::uint32_t* bwt{new std::uint32_t[268435456]{}};   // +1GiB
-    std::uint32_t* sfa{new std::uint32_t[268435456]{}};   // +1GiB
-    std::uint32_t* occ{new std::uint32_t[268435456]{}};   // +1GiB
-    build(seq, bwt, sfa, occ)   // (+-1GiB)
-    save(chr, seq, bwt, sfa, occ);
-    delete[] seq;   // -1GiB
-    delete[] bwt;   // -1GiB
-    delete[] sfa;   // -1GiB
-    delete[] occ;   // -1GiB
+std::uint32_t nucs(std::uint32_t* seq, std::uint32_t len, std::uint32_t p, std::uint32_t r) {
+    uint32_t b = p >> 4;
+    uint32_t h = p & 0b1111;
+    uint32_t t = h + r;
+    if (t <= 16) {
+        return ((seq[b]<<(h<<1))>>((16-r)<<1));
+    } else {
+        t -= 16;
+        return  ((((seq[b]<<(h<<1))>>(h<<1))<<(t<<1))+(seq[b+1]>>((16-t)<<1)));
+    }
 }
 
+// void index(std::string ref_f) {
+//     std::string chr{};
+//     std::uint32_t* seq{new std::uint32_t[268435456]{}};   // +1GiB
+//     read(chr, seq);   // (+-4GiB)
+//     std::uint32_t* bwt{new std::uint32_t[268435456]{}};   // +1GiB
+//     std::uint32_t* sfa{new std::uint32_t[268435456]{}};   // +1GiB
+//     std::uint32_t* occ{new std::uint32_t[268435456]{}};   // +1GiB
+//     build(seq, bwt, sfa, occ)   // (+-1GiB)
+//     save(chr, seq, bwt, sfa, occ);
+//     delete[] seq;   // -1GiB
+//     delete[] bwt;   // -1GiB
+//     delete[] sfa;   // -1GiB
+//     delete[] occ;   // -1GiB
+// }
+
 int main(int argc, char** argv) {
-    index(argv);
+    // index(argv);
+    std::uint32_t* seq{new std::uint32_t[2]{2599597286, 2468661707}};
+    std::bitset<8> x(nucs(seq, 2, 14, 4));
+    std::cout << x;
     return 0;
 }
