@@ -1,4 +1,4 @@
->sequence A
+>NC sequence A
 ggaaaataagtcctcaatagtacaaacaccaaacccaaatattgtgatat
 aattaaattatattcatattcaaaatgttgccagaaaaacacttttaggc
 tatattagagccatcttaaactttgaaaagcgttgtcggtaagtgctcaa

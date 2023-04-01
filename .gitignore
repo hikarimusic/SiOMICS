@@ -1,3 +1,5 @@
+*.txt
+*.fna
 *.chr
 *.seq
 *.out
