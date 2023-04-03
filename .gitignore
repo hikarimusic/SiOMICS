@@ -2,4 +2,7 @@
 *.fna
 *.chr
 *.seq
+*.sfa
+*.bwt
+*.occ
 *.out

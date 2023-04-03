@@ -259,6 +259,26 @@ void index(char** argv) {
     std::uint32_t* bwt{new std::uint32_t[1]{}};   // +1GiB
     std::uint32_t* occ{new std::uint32_t[1]{}};   // +1GiB
     build(seq, len, sfa, bwt, occ);
+    // std::cout << "len: " << len << '\n';
+    // for (int i=0; i<len/16; ++i) {
+    //     std::cout << sfa[i] << ' ';
+    // }
+    // std::cout << '\n';
+    // for (int i=0; i<len; ++i) {
+    //     if (nucs(bwt, len, i, 1)==0)
+    //         std::cout << 'A';
+    //     else if (nucs(bwt, len, i, 1)==1)
+    //         std::cout << 'C';
+    //     else if (nucs(bwt, len, i, 1)==2)
+    //         std::cout << 'G';
+    //     else if (nucs(bwt, len, i, 1)==3)
+    //         std::cout << 'T';
+    // }
+    // std::cout << '\n';
+    // for (int i=0; i<len/16; ++i) {
+    //     std::cout << occ[i] << ' ';
+    // }
+    // std::cout << '\n';
     // save(chr, seq, bwt, sfa, occ);
     delete[] seq;   // -1GiB
     delete[] sfa;   // -1GiB
