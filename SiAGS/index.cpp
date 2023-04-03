@@ -1,11 +1,9 @@
 #include <cstdlib>
 #include <cstdint>
-#include <fstream>
-#include <string>
 #include <ctime>
-
+#include <fstream>
 #include <iostream>
-#include <bitset>
+#include <string>
 
 void write_acgt(std::uint32_t* seq, uint32_t pos, char nuc) {
     uint32_t box = pos >> 4;
