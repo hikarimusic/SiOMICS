@@ -5,9 +5,9 @@
 #include <iostream>
 #include <string>
 
-void write_acgt(std::uint32_t* seq, uint32_t pos, char nuc) {
-    uint32_t box = pos >> 4;
-    uint32_t pnt = (0b1111 - pos & 0b1111) << 1;
+void write_acgt(std::uint32_t* seq, std::uint32_t pos, char nuc) {
+    std::uint32_t box = pos >> 4;
+    std::uint32_t pnt = (0b1111 - pos & 0b1111) << 1;
     if (nuc == 'A' || nuc == 'a' || nuc == 0) {
         seq[box] &= ~(0b01<<pnt);
         seq[box] &= ~(0b10<<pnt);
@@ -45,9 +45,9 @@ void read(char* seq_f, std::string& chr, std::uint32_t& len, std::uint32_t* seq)
     infile.seekg(0, std::ios::beg);
     infile.read((char*)read, seq_l);
     infile.close();
-    uint32_t read_f{0}, nuc_s{0}, nuc_e{0};
+    std::uint32_t read_f{0}, nuc_s{0}, nuc_e{0};
     std::string chr_name{};
-    for (uint32_t i=0; i<=seq_l; ++i) {
+    for (std::uint32_t i=0; i<=seq_l; ++i) {
         if (!(read[i])) {
             if (nuc_e-nuc_s)
                 chr += chr_name + '\n' + std::to_string(nuc_e-nuc_s) + '\n';
@@ -75,16 +75,16 @@ void read(char* seq_f, std::string& chr, std::uint32_t& len, std::uint32_t* seq)
         }
     }
     len = (((nuc_e>>6)+1)<<6);
-    for (uint32_t i=nuc_e; i<len; ++i)
+    for (std::uint32_t i=nuc_e; i<len; ++i)
         write_acgt(seq, i, 'T');
     delete[] read;
     std::cout << '\r' << std::flush << "[Read Sequence] " << "Complete" << "                    " << '\n';
 } 
 
 std::uint32_t nucs(std::uint32_t* seq, std::uint32_t len, std::uint32_t p, std::uint32_t r) {
-    uint32_t b = p >> 4;
-    uint32_t h = p & 0b1111;
-    uint32_t t = h + r;
+    std::uint32_t b = p >> 4;
+    std::uint32_t h = p & 0b1111;
+    std::uint32_t t = h + r;
     if (p >= len) {
         return 0;
     }
@@ -102,23 +102,24 @@ std::uint32_t nucs(std::uint32_t* seq, std::uint32_t len, std::uint32_t p, std::
 }
 
 void build(std::uint32_t len, std::uint32_t* seq, std::uint32_t* sfa, std::uint32_t* bwt, std::uint32_t* occ) {
-    const uint32_t dig{4};
-    const uint32_t gid{256};
-    uint32_t grp[256]{};
-    for (uint32_t i=0; i<len; ++i)
+    const std::uint32_t dig{4};
+    const std::uint32_t gid{256};
+    std::uint32_t grp[256]{};
+    for (std::uint32_t i=0; i<len; ++i)
         grp[nucs(seq, len, i, 4)] += 1;
-    uint32_t gpc{0};
-    uint32_t cco[4]{};
-    for (uint32_t g=0; g<256; ++g) {
-        uint32_t* pmt{new uint32_t[grp[g]]{}};
-        uint32_t* tmp{new uint32_t[grp[g]]{}};
-        uint32_t* pos{new uint32_t[grp[g]]{}};
-        uint32_t* nxt{new uint32_t[grp[g]]{}};
-        uint32_t* cnt{new uint32_t[gid]{}};
-        uint32_t com{0};
-        uint32_t moc{0};
-        uint32_t id{};
-        for (uint32_t i=0; i<len; ++i) {
+    std::uint32_t gpc{};
+    std::uint32_t cco[4]{};
+    std::uint32_t sao{};
+    for (std::uint32_t g=0; g<256; ++g) {
+        std::uint32_t* pmt{new std::uint32_t[grp[g]]{}};
+        std::uint32_t* tmp{new std::uint32_t[grp[g]]{}};
+        std::uint32_t* pos{new std::uint32_t[grp[g]]{}};
+        std::uint32_t* nxt{new std::uint32_t[grp[g]]{}};
+        std::uint32_t* cnt{new std::uint32_t[gid]{}};
+        std::uint32_t com{0};
+        std::uint32_t moc{0};
+        std::uint32_t id{};
+        for (std::uint32_t i=0; i<len; ++i) {
             if (nucs(seq, len, i, 4)==g) {
                 pmt[id] = i;
                 pos[id] = 4;
@@ -128,35 +129,35 @@ void build(std::uint32_t len, std::uint32_t* seq, std::uint32_t* sfa, std::uint3
         }
         while (com < grp[g]) {
             if (nxt[com]-com>=2 && nxt[com]-com<=256) {
-                uint32_t head{pos[com]};
-                uint32_t num{nxt[com]-com};
+                std::uint32_t head{pos[com]};
+                std::uint32_t num{nxt[com]-com};
                 bool flag{1};
                 while (flag) {
-                    for (uint32_t i=1; i<num; ++i) {
+                    for (std::uint32_t i=1; i<num; ++i) {
                         if (nucs(seq, len, pmt[com]+head, 16)!=nucs(seq, len, pmt[com+i]+head, 16))
                             flag = 0;
                     }
                     if (flag)
                         head += 16;
                 }
-                for (uint32_t i=0; i<num; ++i)
+                for (std::uint32_t i=0; i<num; ++i)
                     pos[com+i] = head;
             }
-            for (uint32_t i=0; i<gid; ++i)
+            for (std::uint32_t i=0; i<gid; ++i)
                 cnt[i] = 0;
             for (moc=com; moc<nxt[com]; ++moc) {
                 cnt[nucs(seq, len, pmt[moc]+pos[moc], dig)] += 1; 
             }
-            for (uint32_t j=0; j<cnt[0]; ++j)
+            for (std::uint32_t j=0; j<cnt[0]; ++j)
                 nxt[com+j] = com + cnt[0];
-            for (uint32_t i=1; i<gid; ++i) {
+            for (std::uint32_t i=1; i<gid; ++i) {
                 cnt[i] += cnt[i-1];
-                for (uint32_t j=cnt[i-1]; j<cnt[i]; ++j)
+                for (std::uint32_t j=cnt[i-1]; j<cnt[i]; ++j)
                     nxt[com+j] = com + cnt[i];
             }
-            for (int64_t i=moc-1; i>=com; --i) 
+            for (std::int64_t i=moc-1; i>=com; --i) 
                 tmp[com+(--cnt[nucs(seq, len, pmt[i]+pos[i], dig)])] = pmt[i];
-            for (int64_t i=moc-1; i>=com; --i) {
+            for (std::int64_t i=moc-1; i>=com; --i) {
                 pmt[i] = tmp[i];
                 pos[i] += dig;
             }
@@ -165,10 +166,12 @@ void build(std::uint32_t len, std::uint32_t* seq, std::uint32_t* sfa, std::uint3
             if (com % 1024 == 0)
                 std::cout <<'\r' << std::flush << "[Build Index] " << com+gpc << "/" << len << "                    "; 
         }
-        for (uint32_t i=0; i<grp[g]; ++i) {
-            uint32_t pre{};
-            if (pmt[i]==0)
+        for (std::uint32_t i=0; i<grp[g]; ++i) {
+            std::uint32_t pre{};
+            if (pmt[i]==0) {
                 pre = nucs(seq, len, len-1, 1);
+                sao = gpc+i;
+            }
             else
                 pre = nucs(seq, len, pmt[i]-1, 1);
             write_acgt(bwt, gpc+i, (char) pre);
@@ -176,7 +179,7 @@ void build(std::uint32_t len, std::uint32_t* seq, std::uint32_t* sfa, std::uint3
             if ((gpc+i)%16==0)
                 sfa[(gpc+i)/16] = pmt[i];
             if ((gpc+i+1)%64==0) {
-                for (uint32_t j=0; j<4; ++j)
+                for (std::uint32_t j=0; j<4; ++j)
                     occ[((gpc+i)/64)*4+j] = cco[j];
             }
         }
@@ -186,6 +189,8 @@ void build(std::uint32_t len, std::uint32_t* seq, std::uint32_t* sfa, std::uint3
         delete[] cnt;
         gpc += com;
     }
+    for (std::uint32_t i=0; (i+1)*64<=sao; ++i)
+        occ[i*4+3] += 1;
     std::cout << '\r' << std::flush << "[Build Index] " << "Complete" << "                    " << '\n'; 
 }
 
@@ -215,17 +220,17 @@ void index(char** argv) {
     time(&start);
     std::string chr{};
     std::uint32_t len{};
-    std::uint32_t* seq{new std::uint32_t[268435456]{}};   // +1GiB
+    std::uint32_t* seq{new std::uint32_t[268435456]{}};
     read(argv[1], chr, len, seq);
-    std::uint32_t* sfa{new std::uint32_t[268435456]{}};   // +1GiB
-    std::uint32_t* bwt{new std::uint32_t[268435456]{}};   // +1GiB
-    std::uint32_t* occ{new std::uint32_t[268435456]{}};   // +1GiB
+    std::uint32_t* sfa{new std::uint32_t[268435456]{}};
+    std::uint32_t* bwt{new std::uint32_t[268435456]{}};
+    std::uint32_t* occ{new std::uint32_t[268435456]{}};
     build(len, seq, sfa, bwt, occ);
     save(argv[1], chr, len, seq, sfa, bwt, occ);
-    delete[] seq;   // -1GiB
-    delete[] sfa;   // -1GiB
-    delete[] bwt;   // -1GiB
-    delete[] occ;   // -1GiB
+    delete[] seq;
+    delete[] sfa;
+    delete[] bwt;
+    delete[] occ;
     time(&finish);
     std::cout << "[Finish] Total time: " << difftime(finish, start) << " seconds\n";
 }
