@@ -109,7 +109,6 @@ void build(std::uint32_t len, std::uint32_t* seq, std::uint32_t* sfa, std::uint3
         grp[nucs(seq, len, i, 4)] += 1;
     std::uint32_t gpc{};
     std::uint32_t cco[4]{};
-    std::uint32_t sao{};
     for (std::uint32_t g=0; g<256; ++g) {
         std::uint32_t* pmt{new std::uint32_t[grp[g]]{}};
         std::uint32_t* tmp{new std::uint32_t[grp[g]]{}};
@@ -170,7 +169,7 @@ void build(std::uint32_t len, std::uint32_t* seq, std::uint32_t* sfa, std::uint3
             std::uint32_t pre{};
             if (pmt[i]==0) {
                 pre = nucs(seq, len, len-1, 1);
-                sao = gpc+i;
+                sfa[len/16] = gpc+i;
             }
             else
                 pre = nucs(seq, len, pmt[i]-1, 1);
@@ -189,8 +188,8 @@ void build(std::uint32_t len, std::uint32_t* seq, std::uint32_t* sfa, std::uint3
         delete[] cnt;
         gpc += com;
     }
-    for (std::uint32_t i=0; (i+1)*64<=sao; ++i)
-        occ[i*4+3] += 1;
+    for (int i=1; i<4; ++i)
+        occ[(len>>4)+i] = occ[(len>>4)+i-1] + occ[(((len>>6)-1)<<2)+i-1];
     std::cout << '\r' << std::flush << "[Build Index] " << "Complete" << "                    " << '\n'; 
 }
 
@@ -204,13 +203,13 @@ void save(char* seq_f, std::string& chr, std::uint32_t len, std::uint32_t* seq, 
     outfile.write((char*) seq, len>>2);
     outfile.close();
     outfile.open(std::string(seq_f)+".sfa", std::ios::trunc | std::ios::binary);
-    outfile.write((char*) sfa, len>>2);
+    outfile.write((char*) sfa, (len>>2)+4);
     outfile.close();
     outfile.open(std::string(seq_f)+".bwt", std::ios::trunc | std::ios::binary);
     outfile.write((char*) bwt, len>>2);
     outfile.close();
     outfile.open(std::string(seq_f)+".occ", std::ios::trunc | std::ios::binary);
-    outfile.write((char*) occ, len>>2);
+    outfile.write((char*) occ, (len>>2)+16);
     outfile.close();
     std::cout << '\r' << std::flush << "[Save Index] " << "Complete" << "                    " << '\n'; 
 }
