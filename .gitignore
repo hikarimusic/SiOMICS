@@ -6,5 +6,9 @@
 *.bwt
 *.occ
 *.out
+*.fastq
+*.fq
+*.sam
 index
 align
+tools

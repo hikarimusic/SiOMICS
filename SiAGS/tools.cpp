@@ -95,23 +95,13 @@ std::uint32_t lfm(std::uint32_t r, std::uint32_t c, std::uint32_t len, std::uint
             ans = occ[(len>>4)+c];
         else
             ans = occ[(len>>4)+c] + occ[(((r>>6)-1)<<2)+c];
-        // std::cout << "Hello\n";
-        // std::cout << "Hello\n";
         for (std::uint32_t i=((r>>6)<<6); i<r; ++i) {
-            // if (r==19)
-            //     std::cout << i << ' ' << nucs(bwt, len, i, 1) << ' ' << ans << '\n';
             if (nucs(bwt, len, i, 1)==c)
                 ans += 1;
         }
     }
-    // if (r==15) {
-    //     std::cout << ans << '\n';
-    //     std::cout << "sfa: " << sfa[len>>16] << '\n';
-    // }
     if (c==3 && r<=sfa[len/16])
         ans += 1;
-    // if (r==15)
-    //     std::cout << ans << '\n';
     return ans;
 }
 
@@ -128,96 +118,94 @@ std::uint32_t rpm(std::uint32_t r, std::uint32_t len, std::uint32_t* sfa, std::u
             ans = 0;
             break;
         }
-        // std::cout << row << ' ' << bwt[row] << '\n';
         row = lfm(row, nucs(bwt, len, row, 1), len, sfa, bwt, occ);
-        // std::cout << row << '\n';
-        // std::cout << row << '\n';
     }
     ans += off;
     return ans;
 }
 
-void search(std::string qry, std::uint32_t len, std::uint32_t* seq, std::uint32_t* sfa, std::uint32_t* bwt, std::uint32_t* occ) {
+void map() {
+    std::cout << "[Map] ";
+}
+
+void search(std::string qry, std::uint32_t len, std::uint32_t* sfa, std::uint32_t* bwt, std::uint32_t* occ) {
+    std::cout << "[Search] ";
     std::uint32_t head{0};
     std::uint32_t tail{len};
     for (std::int64_t i=qry.size()-1; i>=0; --i) {
         head = lfm(head, cti(qry[i]), len, sfa, bwt, occ);
         tail = lfm(tail, cti(qry[i]), len, sfa, bwt, occ);
-        // std::cout << head << ' ' << tail << '\n';
+        if (head==tail)
+            break;
     }
     for (std::uint32_t i=head; i<tail; ++i) {
         std::cout << rpm(i, len, sfa, bwt, occ) << ' ';
     }
-    std::cout << '\n';
 }
 
-void align(char** argv) {
+void print(std::uint32_t pos, std::uint32_t _len, std::uint32_t len, std::uint32_t* seq) {
+    std::cout << "[Print] ";
+    for (std::uint32_t i=pos; i<pos+_len; ++i)
+        std::cout << itc(nucs(seq, len, i, 1));
+}
+
+void revcom(std::string str) {
+    std::cout << "[Revcom] ";
+    for (int i=str.size()-1; i>=0; --i) {
+        std::cout << itc(3-cti(str[i]));
+    }
+}
+
+void tools(char** argv) {
+    std::cout <<'\r' << std::flush << "[Load Index] " << "Profiling" << "                    ";
     std::vector<std::string> chr_n;
     std::vector<std::uint32_t> chr_c;
     std::uint32_t len{};
     profile(argv[1], chr_n, chr_c, len);
-
-    // for (int i=0; i<chr_n.size(); ++i) {
-    //     std::cout << chr_n[i] << ' ' << chr_c[i] << '\n';
-    // }
-    // std::cout << len << '\n';
-    // return;
-
+    std::cout <<'\r' << std::flush << "[Load Index] " << "Loading" << "                    ";
     std::uint32_t* seq{new std::uint32_t[len>>4]{}};
     std::uint32_t* sfa{new std::uint32_t[(len>>4)+1]{}};
     std::uint32_t* bwt{new std::uint32_t[len>>4]{}};
     std::uint32_t* occ{new std::uint32_t[(len>>4)+4]{}};
     load(argv[1], len, seq, sfa, bwt, occ);
-
-    std::string str;
-    while (std::cin>>str) {
-        search(str, len, seq, sfa, bwt, occ);
+    std::cout << '\r' << std::flush << "[Load Index] " << "Complete" << "                    " << '\n'; 
+    std::string cmd;
+    std::cout << '\r' << std::flush << "[Start] " << "Available commands:" << "                    " << '\n';
+    std::cout << '\r' << std::flush << "    map [seq1] [seq2] " << "                    " << '\n';
+    std::cout << '\r' << std::flush << "    search [str] " << "                    " << '\n';
+    std::cout << '\r' << std::flush << "    print [pos] [len] " << "                    " << '\n';
+    std::cout << '\r' << std::flush << "    revcom [str] " << "                    " << '\n';
+    std::cout << '\r' << std::flush << "    end          " << "                    " << '\n';
+    std::cout << '\r' << std::flush << "[Command] ";
+    while (std::cin>>cmd) {
+        if (cmd=="map" || cmd=="m") {
+            std::string seq1;
+            std::string seq2;
+            std::cin >> seq1 >> seq2;
+            map();
+        }
+        else if (cmd=="search" || cmd=="s") {
+            std::string str;
+            std::cin >> str;
+            search(str, len, sfa, bwt, occ);
+        }
+        else if (cmd=="print" || cmd=="p") {
+            std::uint32_t pos;
+            std::uint32_t _len;
+            std::cin >> pos >> _len;
+            print(pos, _len, len, seq);
+        }
+        else if (cmd=="revcom" || cmd=="r") {
+            std::string str;
+            std::cin >> str;
+            revcom(str);
+        }
+        else if (cmd=="end" || cmd=="e")
+            break;
+        else
+            std::cout << "Command not found!";
+        std::cout << "\n[Command] ";
     }
-
-    // for (int i=0; i<len; ++i) {
-    //     if (nucs(seq, len, i, 1)==0)
-    //         std::cout << 'A';
-    //     else if (nucs(seq, len, i, 1)==1)
-    //         std::cout << 'C';
-    //     else if (nucs(seq, len, i, 1)==2)
-    //         std::cout << 'G';
-    //     else if (nucs(seq, len, i, 1)==3)
-    //         std::cout << 'T';
-    // }
-    // std::cout << '\n';
-    // for (int i=0; i<len/16+1; ++i) {
-    //     std::cout << sfa[i] << ' ';
-    // }
-    // std::cout << '\n';
-    // for (int i=0; i<len; ++i) {
-    //     if (nucs(bwt, len, i, 1)==0)
-    //         std::cout << 'A';
-    //     else if (nucs(bwt, len, i, 1)==1)
-    //         std::cout << 'C';
-    //     else if (nucs(bwt, len, i, 1)==2)
-    //         std::cout << 'G';
-    //     else if (nucs(bwt, len, i, 1)==3)
-    //         std::cout << 'T';
-    // }
-    // std::cout << '\n';
-    // for (int i=0; i<len/16+4; ++i) {
-    //     std::cout << occ[i] << ' ';
-    // }
-    // std::cout << '\n';
-
-    // std::cout << lfm(1, 1, len, sfa, bwt, occ);
-    // return;
-
-    // for (int i=0; i<len; ++i) {
-    //     int pos = rpm(i, len, sfa, bwt, occ);
-    //     for (int j=pos; j<len; ++j) {
-    //         std::cout << itc(nucs(seq, len, j, 1));
-    //     }
-    //     std::cout << '\n';
-    // }
-
-    // std::cout << rpm(15, len, sfa, bwt, occ) << '\n';
-
     delete[] seq;
     delete[] sfa;
     delete[] bwt;
@@ -225,6 +213,6 @@ void align(char** argv) {
 }
 
 int main(int argc, char** argv) {
-    align(argv);
+    tools(argv);
     return 0;
 }
