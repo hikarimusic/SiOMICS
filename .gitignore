@@ -1,13 +1,14 @@
 *.txt
 *.fna
+*.fasta
 *.chr
 *.seq
 *.sfa
 *.bwt
 *.occ
 *.out
-*.fastq
 *.fq
+*.fastq
 *.sam
 index
 align
