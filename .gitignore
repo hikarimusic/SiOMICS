@@ -1,5 +1,6 @@
 *.txt
 *.fna
+*.fa
 *.fasta
 *.chr
 *.seq
@@ -10,6 +11,7 @@
 *.fq
 *.fastq
 *.sam
+*.stat
 index
 align
 tools
