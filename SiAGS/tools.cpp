@@ -56,13 +56,13 @@ std::uint32_t nucs(std::uint32_t* seq, std::uint32_t len, std::uint32_t p, std::
 }
 
 std::uint32_t cti(char c) {
-    if (c=='A' || c=='a')
+    if (c=='A')
         return 0;
-    else if (c=='C' || c=='c')
+    else if (c=='C')
         return 1;
-    else if (c=='G' || c=='g')
+    else if (c=='G')
         return 2;
-    else if (c=='T' || c=='t')
+    else if (c=='T')
         return 3;
     else
         return 0;
@@ -124,15 +124,90 @@ std::uint32_t rpm(std::uint32_t r, std::uint32_t len, std::uint32_t* sfa, std::u
     return ans;
 }
 
-void map() {
-    std::cout << "[Map] ";
+std::string rcseq(std::string s) {
+    std::string res;
+    for (std::int32_t i=s.size()-1; i>=0; --i) {
+        if (s[i]=='A')
+            res += 'T';
+        else if (s[i]=='C')
+            res += 'G';
+        else if (s[i]=='G')
+            res += 'C';
+        else if (s[i]=='T')
+            res += 'A';
+    }
+    return res;
+}
+
+void capitalize(std::string& s) {
+    for (std::int32_t i=0; i<s.size(); ++i) {
+        if (s[i]=='a')
+            s[i] = 'A';
+        else if (s[i]=='c')
+            s[i] = 'C';
+        else if (s[i]=='g')
+            s[i] = 'G';
+        else if (s[i]=='t')
+            s[i] = 'T';
+    }
+}
+
+struct seed {
+    std::int64_t qs{};
+    std::int64_t qe{};
+    std::int64_t rs{};
+    std::int64_t re{};
+    std::int64_t fg{};
+};
+
+void map(std::string seq1, std::string seq2, std::uint32_t len, std::uint32_t* seq, std::uint32_t* sfa, std::uint32_t* bwt, std::uint32_t* occ) {
+    // std::cout << "[Map] ";
+    capitalize(seq1);
+    capitalize(seq2);
+    const std::int64_t wid{5};
+    const std::int64_t gap{1000};
+    std::vector<std::string> seqs{seq1, rcseq(seq1), seq2, rcseq(seq2)};
+    std::vector<seed> seds;
+    for (std::int64_t fg=0; fg<4; ++fg) {
+        std::string qry = seqs[fg];
+        for (std::int64_t qe=seqs[fg].size(); qe>0; --qe) {
+            // std::cout << "qe: " << qe << '\n';
+            std::int64_t head = 0;
+            std::int64_t tail = len;
+            for (std::int64_t qp=qe-1; qp>=0; --qp) {
+                // std::cout << "qp: " << qp << '\n';
+                head = lfm(head, cti(qry[qp]), len, sfa, bwt, occ);
+                tail = lfm(tail, cti(qry[qp]), len, sfa, bwt, occ);
+                if ((tail-head)<=wid) {
+                    for (std::int64_t rps=head; rps<tail; ++rps) {
+                        std::int64_t rp = rpm(rps, len, sfa, bwt, occ);
+                        std::int64_t qs{}; 
+                        for (qs=qp-1; qs>=0; --qs) {
+                            if (qry[qs]!=itc(nucs(seq, len, rp-qp+qs, 1)))
+                                break;
+                        }
+                        qs += 1;
+                        // std::cout << "qs: " << qs << '\n';
+                        seds.push_back({qs, qe, rp-qp+qs, rp+qe-qp, fg});
+                        // std::cout << qs << ' ' << qe << ' ' << rp-qp+qs << ' ' << rp+qe-qp << ' ' << fg << '\n';
+                    }
+                    break;
+                }
+            }
+        }
+    }
+    // for(auto x : seds) {
+    //     std::cout << x.qs << ' ' << x.qe << ' ' << x.rs << ' ' << x.re << ' ' << x.fg << '\n';
+    // }
+    std::cout << "seds size: " << seds.size() << '\n';
 }
 
 void search(std::string qry, std::uint32_t len, std::uint32_t* sfa, std::uint32_t* bwt, std::uint32_t* occ) {
     std::cout << "[Search] ";
+    capitalize(qry);
     std::uint32_t head{0};
     std::uint32_t tail{len};
-    for (std::int64_t i=qry.size()-1; i>=0; --i) {
+    for (std::int32_t i=qry.size()-1; i>=0; --i) {
         head = lfm(head, cti(qry[i]), len, sfa, bwt, occ);
         tail = lfm(tail, cti(qry[i]), len, sfa, bwt, occ);
         if (head==tail)
@@ -150,6 +225,7 @@ void print(std::uint32_t pos, std::uint32_t _len, std::uint32_t len, std::uint32
 }
 
 void revcom(std::string str) {
+    capitalize(str);
     std::cout << "[Revcom] ";
     for (int i=str.size()-1; i>=0; --i) {
         std::cout << itc(3-cti(str[i]));
@@ -182,7 +258,7 @@ void tools(char** argv) {
             std::string seq1;
             std::string seq2;
             std::cin >> seq1 >> seq2;
-            map();
+            map(seq1, seq2, len, seq, sfa, bwt, occ);
         }
         else if (cmd=="search" || cmd=="s") {
             std::string str;
