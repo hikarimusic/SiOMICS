@@ -1,5 +1,7 @@
+#include <algorithm>
 #include <cstdint>
 #include <ctime>
+#include <deque>
 #include <fstream>
 #include <iostream>
 #include <string>
@@ -161,45 +163,54 @@ struct seed {
 };
 
 void map(std::string seq1, std::string seq2, std::uint32_t len, std::uint32_t* seq, std::uint32_t* sfa, std::uint32_t* bwt, std::uint32_t* occ) {
-    // std::cout << "[Map] ";
+    std::cout << "[Map] ";
     capitalize(seq1);
     capitalize(seq2);
     const std::int64_t wid{5};
     const std::int64_t gap{1000};
     std::vector<std::string> seqs{seq1, rcseq(seq1), seq2, rcseq(seq2)};
     std::vector<seed> seds;
+    std::deque<std::int64_t> sedt(5);
     for (std::int64_t fg=0; fg<4; ++fg) {
         std::string qry = seqs[fg];
         for (std::int64_t qe=seqs[fg].size(); qe>0; --qe) {
-            // std::cout << "qe: " << qe << '\n';
+            std::cout << "qe: " << qe << '\n';
             std::int64_t head = 0;
             std::int64_t tail = len;
             for (std::int64_t qp=qe-1; qp>=0; --qp) {
-                // std::cout << "qp: " << qp << '\n';
                 head = lfm(head, cti(qry[qp]), len, sfa, bwt, occ);
                 tail = lfm(tail, cti(qry[qp]), len, sfa, bwt, occ);
                 if ((tail-head)<=wid) {
+                    std::cout << "qp: " << qp << '\n';
                     for (std::int64_t rps=head; rps<tail; ++rps) {
                         std::int64_t rp = rpm(rps, len, sfa, bwt, occ);
-                        std::int64_t qs{}; 
-                        for (qs=qp-1; qs>=0; --qs) {
-                            if (qry[qs]!=itc(nucs(seq, len, rp-qp+qs, 1)))
-                                break;
+                        if (std::find(sedt.begin(), sedt.end(), rp+qry.size()-qp)==sedt.end()) {
+                            std::int64_t qs{}; 
+                            for (qs=qp-1; qs>=0; --qs) {
+                                if (qry[qs]!=itc(nucs(seq, len, rp-qp+qs, 1)))
+                                    break;
+                            }
+                            qs += 1;
+                            std::cout << "qs: " << qs << '\n';
+                            seds.push_back({qs, qe, rp-qp+qs, rp+qe-qp, fg});
+                            std::cout << qs << ' ' << qe << ' ' << rp-qp+qs << ' ' << rp+qe-qp << ' ' << fg << '\n';
                         }
-                        qs += 1;
-                        // std::cout << "qs: " << qs << '\n';
-                        seds.push_back({qs, qe, rp-qp+qs, rp+qe-qp, fg});
-                        // std::cout << qs << ' ' << qe << ' ' << rp-qp+qs << ' ' << rp+qe-qp << ' ' << fg << '\n';
+                        sedt.push_back(rp+qry.size()-qp);
                     }
+                    for (std::int64_t i=0; i<wid-(tail-head); ++i)
+                        sedt.push_back(0);
+                    for (std::int64_t i=0; i<wid; ++i)
+                        sedt.pop_front();
+                    for (auto x : sedt)
+                        std::cout << x << ' ';
+                    std::cout << '\n';
                     break;
                 }
             }
         }
     }
-    // for(auto x : seds) {
-    //     std::cout << x.qs << ' ' << x.qe << ' ' << x.rs << ' ' << x.re << ' ' << x.fg << '\n';
-    // }
     std::cout << "seds size: " << seds.size() << '\n';
+
 }
 
 void search(std::string qry, std::uint32_t len, std::uint32_t* sfa, std::uint32_t* bwt, std::uint32_t* occ) {
