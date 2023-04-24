@@ -369,17 +369,63 @@ void map(std::string seq1, std::string seq2, std::uint32_t len, std::uint32_t* s
                     }
                 }
             }
-            std::cout << ' ';
-            for (int i=0; i<=sed_m[s].qs-sed_m[s-1].qe; ++i) {
-                for (int j=0; j<=sed_m[s].rs-sed_m[s-1].re; ++j) {
-                    std::cout << dp_c[i][j];
+            // std::cout << ' ';
+            // for (int i=0; i<=sed_m[s].qs-sed_m[s-1].qe; ++i) {
+            //     for (int j=0; j<=sed_m[s].rs-sed_m[s-1].re; ++j) {
+            //         std::cout << dp_c[i][j];
+            //     }
+            //     std::cout << '\n';
+            // }
+            int dx = sed_m[s].qs-sed_m[s-1].qe;
+            int dy = (int) sed_m[s].rs-sed_m[s-1].re;
+            while (dx>0 || dy>0) {
+                // std::cout << dx << ' ' << dy << '\n';
+                // std::cin >> l;
+                if (tmp_c.empty() || tmp_c.back()!=dp_c[dx][dy]) {
+                    tmp_i.push_back(1);
+                    tmp_c.push_back(dp_c[dx][dy]);
                 }
-                std::cout << '\n';
+                else {
+                    tmp_i.back() += 1;
+                }
+                if (dp_c[dx][dy]=='M' || dp_c[dx][dy]=='S') {
+                    dx -= 1;
+                    dy -= 1;
+                }
+                else if (dp_c[dx][dy]=='D')
+                    dy -= 1;
+                else if (dp_c[dx][dy]=='I')
+                    dx -= 1;
             }
-            int dx{};
-            int dy{};
-
+            if (s==1) {
+                pos[q] = sed_m[0].rs;
+                if (!tmp_c.empty() && tmp_c.back()=='D') {
+                    pos[q] += tmp_i.back();
+                    tmp_i.pop_back();
+                    tmp_c.pop_back();
+                }
+                    
+            }
+            for (int i=tmp_i.size()-1; i>=0; --i) {
+                if (aln_c[q].empty() || aln_c[q].back()!=tmp_c[i]) {
+                    aln_i[q].push_back(tmp_i[i]);
+                    aln_c[q].push_back(tmp_c[i]);
+                }
+                else
+                    aln_i[q].back() += tmp_i[i];
+            }
+            if (aln_c[q].empty() || aln_c[q].back()!='M') {
+                aln_i[q].push_back(sed_m[s].qe-sed_m[s].qs);
+                aln_c[q].push_back('M');
+            }
+            else
+                aln_i[q].back() += sed_m[s].qe-sed_m[s].qs;
         }
+
+        for (int i=0; i<aln_i[q].size(); ++i) {
+            std::cout << aln_c[q][i] << aln_i[q][i];
+        }
+        std::cout << '\n';
     }
 }
 
