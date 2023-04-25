@@ -168,6 +168,100 @@ struct cluster {
     std::vector<seed> seds;
 };
 
+void dp_ed(std::string sa, std::string sb, std::vector<int>& aln_i, std::vector<char>& aln_c, int& trc) {
+    int dp_i[sa.size()+1][sb.size()+1]{};
+    char dp_c[sa.size()+1][sb.size()+1]{};
+    std::vector<int> tmp_i;
+    std::vector<char> tmp_c;
+    for (int i=1; i<=sa.size(); ++i) {
+        dp_i[i][0] = i;
+        dp_c[i][0] = 'I';
+    }
+    for (int j=1; j<=sb.size(); ++j) {
+        dp_i[0][j] = j;
+        dp_c[0][j] = 'D';
+    }
+    for (int i=1; i<=sa.size(); ++i) {
+        for (int j=1; j<=sb.size(); ++j) {
+            if (sa[i-1]==sb[j-1]) {
+                dp_i[i][j] = dp_i[i-1][j-1];
+                dp_c[i][j] = 'M';
+                continue;
+            }
+            else if (dp_i[i-1][j-1]<=dp_i[i][j-1] && dp_i[i-1][j-1]<=dp_i[i-1][j]) {
+                dp_i[i][j] = dp_i[i-1][j-1] + 1;
+                dp_c[i][j] = 'S';
+                continue;
+            }
+            else if (dp_i[i][j-1]<=dp_i[i-1][j-1] && dp_i[i][j-1]<=dp_i[i-1][j]) {
+                dp_i[i][j] = dp_i[i][j-1] + 1;
+                dp_c[i][j] = 'D';
+                continue;
+            }
+            else {
+                dp_i[i][j] = dp_i[i-1][j] + 1;
+                dp_c[i][j] = 'I';
+                continue;
+            }
+        }
+    }
+    int dx{}, dy{};
+    if (trc) {
+        trc = 0;
+        int tmp{dp_i[sa.size()][0]};
+        int j{};
+        for (j=1; j<=sb.size(); ++j) {
+            if (dp_i[sa.size()][j]<tmp) {
+                trc = j;
+                tmp = dp_i[sa.size()][j];
+            }
+        }
+        dx = sa.size();
+        dy = trc;
+    }
+    else {
+        dx = sa.size();
+        dy = sb.size();
+    }
+    // std::cout << ' ';
+    // for (int i=0; i<=sa.size(); ++i) {
+    //     for (int j=0; j<=sb.size(); ++j) {
+    //         std::cout << dp_c[i][j];
+    //     }
+    //     std::cout << '\n';
+    // }
+    // for (int i=0; i<=sa.size(); ++i) {
+    //     for (int j=0; j<=sb.size(); ++j) {
+    //         std::cout << dp_i[i][j] << '\t';
+    //     }
+    //     std::cout << '\n';
+    // }
+    while (dx>0 || dy>0) {
+        if (tmp_c.empty() || tmp_c.back()!=dp_c[dx][dy]) {
+            tmp_i.push_back(1);
+            tmp_c.push_back(dp_c[dx][dy]);
+        }
+        else
+            tmp_i.back() += 1;
+        if (dp_c[dx][dy]=='M' || dp_c[dx][dy]=='S') {
+            dx -= 1;
+            dy -= 1;
+        }
+        else if (dp_c[dx][dy]=='D')
+            dy -= 1;
+        else if (dp_c[dx][dy]=='I')
+            dx -= 1;
+    }
+    for (int i=tmp_i.size()-1; i>=0; --i) {
+        if (aln_c.empty() || aln_c.back()!=tmp_c[i]) {
+            aln_i.push_back(tmp_i[i]);
+            aln_c.push_back(tmp_c[i]);
+        }
+        else
+            aln_i.back() += tmp_i[i];
+    }
+}
+
 void map(std::string seq1, std::string seq2, std::uint32_t len, std::uint32_t* seq, std::uint32_t* sfa, std::uint32_t* bwt, std::uint32_t* occ) {
     std::cout << "[Map] ";
     capitalize(seq1);
@@ -303,127 +397,114 @@ void map(std::string seq1, std::string seq2, std::uint32_t len, std::uint32_t* s
     // }
     // for (int i=0; i<4; ++i)
     //     std::cout << now[i] << ' ' << chs[i] << ' ' << val[i] << ' ' << cls[chs[i]].seds.size() << ' ' << cls[chs[i]].seds[0].rs << '\n';
-    for (int i=0; i<4; ++i) {
-        for (auto x : cls[chs[i]].seds)
-            std::cout << x.rs << ' ' << x.re << " / ";
-        std::cout << '\n';
-    }
-    for (int i=0; i<4; ++i) {
-        for (auto x : cls[chs[i]].seds)
-            std::cout << x.qs << ' ' << x.qe << " / ";
-        std::cout << '\n';
-    }
-
-    int rf[2]{};
-    rf[0] = (val[1]>val[0]) ? 1 : 0;
-    rf[1] = (val[2]>val[3]) ? 2 : 3;
+    // for (int i=0; i<4; ++i) {
+    //     for (auto x : cls[chs[i]].seds)
+    //         std::cout << x.rs << ' ' << x.re << " / ";
+    //     std::cout << '\n';
+    // }
+    // for (int i=0; i<4; ++i) {
+    //     for (auto x : cls[chs[i]].seds)
+    //         std::cout << x.qs << ' ' << x.qe << " / ";
+    //     std::cout << '\n';
+    // }
     std::int64_t pos[2]{};
+    int rf[2]{(val[1]>val[0])?1:0, (val[2]>val[3])?2:3};
     std::vector<int> aln_i[2];
     std::vector<char> aln_c[2];
-    int dp_i[std::max((int)seq1.size(), (int)seq2.size()) * flk][std::max((int)seq1.size(), (int)seq2.size()) * flk]{};
-    char dp_c[std::max((int)seq1.size(), (int)seq2.size()) * flk][std::max((int)seq1.size(), (int)seq2.size()) * flk]{};
-    std::vector<int> tmp_i;
-    std::vector<char> tmp_c;
     for (int q=0; q<2; ++q) {
         std::string qry = seqs[rf[q]];
-        std::deque<seed> sed_m;
-        for (seed x : cls[chs[rf[q]]].seds)
-            sed_m.push_back(x);
-        sed_m.push_front({0, 0, std::max(sed_m.front().rs-flk*sed_m.front().qs, (std::int64_t) 0), std::max(sed_m.front().rs-flk*sed_m.front().qs, (std::int64_t) 0), 0});
-        sed_m.push_back({(int)qry.size(), (int)qry.size(), sed_m.back().re+flk*((int)qry.size()-sed_m.back().qe), sed_m.back().re+flk*((int)qry.size()-sed_m.back().qe), 0});
-        // for (auto x : sed_m) {
-        //     std::cout << x.qs << ' ' << x.qe << ' ' << x.rs << ' ' << x.re << '\n';
+        std::vector<seed> sed_m = cls[chs[rf[q]]].seds;
+        std::string sa;
+        std::string sb;
+        sa = qry.substr(0, sed_m.front().qs);
+        std::reverse(sa.begin(), sa.end());
+        sb = "";
+        for (int i=0; i<sa.size()*flk; ++i)
+            sb.push_back(itc(nucs(seq, len, sed_m.front().rs-1-i, 1)));
+        int trc{1};
+        dp_ed(sa, sb, aln_i[q], aln_c[q], trc);
+        pos[q] = sed_m.front().rs - trc;
+        std::reverse(aln_i[q].begin(), aln_i[q].end());
+        std::reverse(aln_c[q].begin(), aln_c[q].end());
+        if (aln_c[q].empty() || aln_c[q].back()!='M') {
+            aln_i[q].push_back(sed_m.front().qe-sed_m.front().qs);
+            aln_c[q].push_back('M');
+        }
+        else
+            aln_i[q].back() += sed_m.front().qe-sed_m.front().qs;
+
+        // std::cout << "head\n";
+        // for (int i=0; i<aln_i[q].size(); ++i) {
+        //     std::cout << aln_c[q][i] << aln_i[q][i];
         // }
+        // std::cout << '\n';
+
         for (int s=1; s<sed_m.size(); ++s) {
-            tmp_i.clear();
-            tmp_c.clear();
-            for (int i=1; i<=sed_m[s].qs-sed_m[s-1].qe; ++i) {
-                dp_i[i][0] = i;
-                dp_c[i][0] = 'I';
-            }
-            for (int j=1; j<=sed_m[s].rs-sed_m[s-1].re; ++j) {
-                dp_i[0][j] = j;
-                dp_c[0][j] = 'D';
-            }
-            for (int i=1; i<=sed_m[s].qs-sed_m[s-1].qe; ++i) {
-                for (int j=1; j<=sed_m[s].rs-sed_m[s-1].re; ++j) {
-                    if (qry[sed_m[s-1].qe+i-1]==itc(nucs(seq, len, sed_m[s-1].re+j-1, 1))) {
-                        dp_i[i][j] = dp_i[i-1][j-1];
-                        dp_c[i][j] = 'M';
-                        continue;
-                    }
-                    else if (dp_i[i-1][j-1]<=dp_i[i][j-1] && dp_i[i-1][j-1]<=dp_i[i-1][j]) {
-                        dp_i[i][j] = dp_i[i-1][j-1] + 1;
-                        dp_c[i][j] = 'S';
-                        continue;
-                    }
-                    else if (dp_i[i][j-1]<=dp_i[i-1][j-1] && dp_i[i][j-1]<=dp_i[i-1][j]) {
-                        dp_i[i][j] = dp_i[i][j-1] + 1;
-                        dp_c[i][j] = 'D';
-                        continue;
-                    }
-                    else {
-                        dp_i[i][j] = dp_i[i-1][j] + 1;
-                        dp_c[i][j] = 'I';
-                        continue;
-                    }
-                }
-            }
-            // std::cout << ' ';
-            // for (int i=0; i<=sed_m[s].qs-sed_m[s-1].qe; ++i) {
-            //     for (int j=0; j<=sed_m[s].rs-sed_m[s-1].re; ++j) {
-            //         std::cout << dp_c[i][j];
-            //     }
-            //     std::cout << '\n';
-            // }
-            int dx = sed_m[s].qs-sed_m[s-1].qe;
-            int dy = (int) sed_m[s].rs-sed_m[s-1].re;
-            while (dx>0 || dy>0) {
-                // std::cout << dx << ' ' << dy << '\n';
-                // std::cin >> l;
-                if (tmp_c.empty() || tmp_c.back()!=dp_c[dx][dy]) {
-                    tmp_i.push_back(1);
-                    tmp_c.push_back(dp_c[dx][dy]);
-                }
-                else {
-                    tmp_i.back() += 1;
-                }
-                if (dp_c[dx][dy]=='M' || dp_c[dx][dy]=='S') {
-                    dx -= 1;
-                    dy -= 1;
-                }
-                else if (dp_c[dx][dy]=='D')
-                    dy -= 1;
-                else if (dp_c[dx][dy]=='I')
-                    dx -= 1;
-            }
-            if (s==1) {
-                pos[q] = sed_m[0].rs;
-                if (!tmp_c.empty() && tmp_c.back()=='D') {
-                    pos[q] += tmp_i.back();
-                    tmp_i.pop_back();
-                    tmp_c.pop_back();
-                }
-                    
-            }
-            for (int i=tmp_i.size()-1; i>=0; --i) {
-                if (aln_c[q].empty() || aln_c[q].back()!=tmp_c[i]) {
-                    aln_i[q].push_back(tmp_i[i]);
-                    aln_c[q].push_back(tmp_c[i]);
-                }
-                else
-                    aln_i[q].back() += tmp_i[i];
-            }
+            sa = qry.substr(sed_m[s-1].qe, sed_m[s].qs-sed_m[s-1].qe);
+            sb = "";
+            for (std::int64_t i=sed_m[s-1].re; i<sed_m[s].rs; ++i)
+                sb.push_back(itc(nucs(seq, len, i, 1)));
+            trc = 0;
+            dp_ed(sa, sb, aln_i[q], aln_c[q], trc);
             if (aln_c[q].empty() || aln_c[q].back()!='M') {
                 aln_i[q].push_back(sed_m[s].qe-sed_m[s].qs);
                 aln_c[q].push_back('M');
             }
             else
                 aln_i[q].back() += sed_m[s].qe-sed_m[s].qs;
-        }
 
+            // std::cout << s << "\n";
+            // for (int i=0; i<aln_i[q].size(); ++i) {
+            //     std::cout << aln_c[q][i] << aln_i[q][i];
+            // }
+            // std::cout << '\n';
+
+        }
+        sa = qry.substr(sed_m.back().qe, qry.size()-sed_m.back().qe);
+        sb = "";
+        for (int i=0; i<sa.size()*flk; ++i)
+            sb.push_back(itc(nucs(seq, len, sed_m.back().re+i, 1)));
+        trc = 1;
+        dp_ed(sa, sb, aln_i[q], aln_c[q], trc);
+
+        // for (int i=0; i<aln_i[q].size(); ++i) {
+        //     std::cout << aln_c[q][i] << aln_i[q][i];
+        // }
+        // std::cout << '\n';
+
+        // std::cout << "tail\n";
+        // for (int i=0; i<aln_i[q].size(); ++i) {
+        //     std::cout << aln_c[q][i] << aln_i[q][i];
+        // }
+        // std::cout << '\n';
+    }
+    for (int q=0; q<2; ++q) {
+        std:int64_t rp{pos[q]}, sp{0};
+        std::cout << "\n    map" << q+1 << ": " << pos[q] << " / " << ((rf[q]&1)?"reverse":"forward") << " / ";
         for (int i=0; i<aln_i[q].size(); ++i) {
             std::cout << aln_c[q][i] << aln_i[q][i];
+        }
+        std::cout << "\n    ref" << q+1 << ": ";
+        for (int i=0; i<aln_i[q].size(); ++i) {
+            for (int j=0; j<aln_i[q][i]; ++j) {
+                if (aln_c[q][i]=='I')
+                    std::cout << ".";
+                else {
+                    std::cout << itc(nucs(seq, len, rp, 1));
+                    rp += 1;
+                }                
+            }
+        }
+        std::cout << "\n    seq" << q+1 << ": ";
+        for (int i=0; i<aln_i[q].size(); ++i) {
+            for (int j=0; j<aln_i[q][i]; ++j) {
+                if (aln_c[q][i]=='D')
+                    std::cout << ".";
+                else {
+                    std::cout << seqs[rf[q]][sp];
+                    sp += 1;
+                }                
+            }
         }
         std::cout << '\n';
     }
